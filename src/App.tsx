@@ -222,8 +222,8 @@ function App() {
         <section className="chart-panel" aria-label="Hourly price chart">
           <div className="section-heading">
             <div>
-              <h2>Hourly price curve</h2>
-              <p>All times are Central. Full price excludes fixed monthly charges and capacity charge.</p>
+              <h2>Hour-ending price curve</h2>
+              <p>All labels are Central hour-ending times. Full price excludes fixed monthly charges and capacity charge.</p>
             </div>
             <button className="secondary-button" type="button" onClick={() => exportCsv(points)}>
               <Download size={16} />
@@ -347,7 +347,7 @@ function App() {
 
       <section className="breakdown-grid">
         <section className="breakdown">
-          <h2>Selected hour</h2>
+          <h2>Selected hour ending</h2>
           {activePoint ? (
             <>
               <div className="big-number">{cents(activePoint.total)}</div>
@@ -366,12 +366,12 @@ function App() {
         </section>
 
         <section className="table-panel">
-          <h2>Hourly table</h2>
+          <h2>Hour-ending table</h2>
           <div className="table-scroll">
             <table>
               <thead>
                 <tr>
-                  <th>Hour</th>
+                  <th>Hour ending</th>
                   <th>Bucket</th>
                   <th>Actual</th>
                   <th>Day-ahead</th>
@@ -480,7 +480,7 @@ function ChartTooltip({
 
 function exportCsv(points: DashboardPoint[]) {
   const rows = [
-    ['hour_central', 'bucket', 'actual_supply_cents', 'day_ahead_supply_cents', 'dfc_cents', 'transmission_cents', 'iedt_cents', 'riders_taxes_cents', 'full_actual_cents', 'full_day_ahead_cents'],
+    ['hour_ending_central', 'bucket', 'actual_supply_cents', 'day_ahead_supply_cents', 'dfc_cents', 'transmission_cents', 'iedt_cents', 'riders_taxes_cents', 'full_actual_cents', 'full_day_ahead_cents'],
     ...points.map((point) => [
       formatCentralDateTime(point.at),
       point.bucketLabel,

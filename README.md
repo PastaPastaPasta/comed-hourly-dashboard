@@ -2,6 +2,8 @@
 
 Dashboard for ComEd residential hourly pricing. It graphs ComEd real-time and day-ahead hourly prices, then overlays an estimated full variable cents/kWh price using editable residential tariff adders.
 
+All chart and table timestamps are Central **hour-ending** labels. For example, `1:00 AM` means the `12:00 AM-1:00 AM` interval.
+
 ## Commands
 
 - `npm run dev` starts the local app.
