@@ -71,6 +71,23 @@ const cents = (value: number | null | undefined, digits = 2) =>
 const dollars = (value: number) => value.toFixed(5);
 const HOUR_MS = 60 * 60 * 1000;
 
+type SeriesKey = 'actualSupply' | 'dayAheadSupply' | 'fullActual' | 'fullDayAhead';
+type ChartLegendPayload = { dataKey?: unknown; color?: string };
+
+const seriesMeta: Record<SeriesKey, { label: string; color: string }> = {
+  actualSupply: { label: 'Real-time supply', color: '#1f6feb' },
+  dayAheadSupply: { label: 'Day-ahead supply', color: '#f59e0b' },
+  fullActual: { label: 'Full variable', color: '#0f8b6f' },
+  fullDayAhead: { label: 'Full day-ahead', color: '#94a3b8' },
+};
+
+const defaultVisibleSeries: Record<SeriesKey, boolean> = {
+  actualSupply: true,
+  dayAheadSupply: true,
+  fullActual: true,
+  fullDayAhead: true,
+};
+
 type ChargingWindow = {
   durationHours: number;
   startAt: number;
@@ -130,7 +147,7 @@ function formatWindow(window: ChargingWindow): string {
 
 function App() {
   const [range, setRange] = useState<RangeKey>('today');
-  const [showSupplyOnly, setShowSupplyOnly] = useState(false);
+  const [visibleSeries, setVisibleSeries] = useState(defaultVisibleSeries);
   const [showSettings, setShowSettings] = useState(true);
   const [overrides, setOverrides] = useState<TariffOverrides>(() => loadOverrides());
   const [points, setPoints] = useState<DashboardPoint[]>([]);
@@ -216,6 +233,18 @@ function App() {
     .filter((window): window is ChargingWindow => window !== null);
   const highlightedWindow =
     chargingWindows.find((window) => window.durationHours === 3) ?? chargingWindows.at(-1) ?? null;
+  const showSupplyOnly =
+    visibleSeries.actualSupply &&
+    visibleSeries.dayAheadSupply &&
+    !visibleSeries.fullActual &&
+    !visibleSeries.fullDayAhead;
+
+  const toggleSeries = (key: SeriesKey) => {
+    setVisibleSeries((current) => ({
+      ...current,
+      [key]: !current[key],
+    }));
+  };
 
   const updateClass = (id: ResidentialClassId) => {
     const defaults = createDefaultOverrides(id);
@@ -284,7 +313,14 @@ function App() {
           <input
             type="checkbox"
             checked={showSupplyOnly}
-            onChange={(event) => setShowSupplyOnly(event.target.checked)}
+            onChange={(event) => {
+              setVisibleSeries({
+                actualSupply: true,
+                dayAheadSupply: true,
+                fullActual: !event.target.checked,
+                fullDayAhead: !event.target.checked,
+              });
+            }}
           />
           Supply-only chart
         </label>
@@ -354,7 +390,16 @@ function App() {
                   <XAxis dataKey="at" tickFormatter={(value) => formatCentralDateTime(Number(value))} minTickGap={42} />
                   <YAxis unit="¢" width={48} />
                   <Tooltip content={<ChartTooltip />} />
-                  <Legend />
+                  <Legend
+                    content={(props) => (
+                      <ChartLegend
+                        payload={props.payload}
+                        visibleSeries={visibleSeries}
+                        onToggle={toggleSeries}
+                      />
+                    )}
+                    itemSorter={null}
+                  />
                   {highlightedWindow ? (
                     <ReferenceArea
                       x1={highlightedWindow.startAt}
@@ -366,14 +411,10 @@ function App() {
                     />
                   ) : null}
                   <ReferenceLine y={0} stroke="#768298" strokeDasharray="4 4" />
-                  <Line type="monotone" dataKey="actualSupply" name="Real-time supply" stroke="#1f6feb" strokeWidth={2} dot={false} connectNulls />
-                  <Line type="monotone" dataKey="dayAheadSupply" name="Day-ahead supply" stroke="#f59e0b" strokeWidth={2} strokeDasharray="6 4" dot={false} connectNulls />
-                  {!showSupplyOnly ? (
-                    <Line type="monotone" dataKey="fullActual" name="Full variable" stroke="#0f8b6f" strokeWidth={3} dot={false} connectNulls />
-                  ) : null}
-                  {!showSupplyOnly ? (
-                    <Line type="monotone" dataKey="fullDayAhead" name="Full day-ahead" stroke="#94a3b8" strokeWidth={2} strokeDasharray="5 6" dot={false} connectNulls />
-                  ) : null}
+                  <Line type="monotone" dataKey="actualSupply" name={seriesMeta.actualSupply.label} stroke={seriesMeta.actualSupply.color} strokeWidth={2} dot={false} connectNulls hide={!visibleSeries.actualSupply} />
+                  <Line type="monotone" dataKey="dayAheadSupply" name={seriesMeta.dayAheadSupply.label} stroke={seriesMeta.dayAheadSupply.color} strokeWidth={2} strokeDasharray="6 4" dot={false} connectNulls hide={!visibleSeries.dayAheadSupply} />
+                  <Line type="monotone" dataKey="fullActual" name={seriesMeta.fullActual.label} stroke={seriesMeta.fullActual.color} strokeWidth={3} dot={false} connectNulls hide={!visibleSeries.fullActual} />
+                  <Line type="monotone" dataKey="fullDayAhead" name={seriesMeta.fullDayAhead.label} stroke={seriesMeta.fullDayAhead.color} strokeWidth={2} strokeDasharray="5 6" dot={false} connectNulls hide={!visibleSeries.fullDayAhead} />
                 </LineChart>
               </ResponsiveContainer>
             ) : (
@@ -526,6 +567,43 @@ function App() {
         </span>
       </footer>
     </main>
+  );
+}
+
+function ChartLegend({
+  payload,
+  visibleSeries,
+  onToggle,
+}: {
+  payload?: ReadonlyArray<ChartLegendPayload>;
+  visibleSeries: Record<SeriesKey, boolean>;
+  onToggle: (key: SeriesKey) => void;
+}) {
+  const orderedKeys = Object.keys(seriesMeta) as SeriesKey[];
+  const payloadByKey = new Map(
+    (payload ?? []).map((entry) => [String(entry.dataKey), entry]),
+  );
+
+  return (
+    <div className="chart-legend" aria-label="Chart series">
+      {orderedKeys.map((key) => {
+        const entry = payloadByKey.get(key);
+        const color = entry?.color ?? seriesMeta[key].color;
+        const active = visibleSeries[key];
+        return (
+          <button
+            key={key}
+            className={active ? 'legend-button active' : 'legend-button'}
+            type="button"
+            onClick={() => onToggle(key)}
+            aria-pressed={active}
+          >
+            <span className="legend-swatch" style={{ backgroundColor: active ? color : '#cbd5e1' }} />
+            {seriesMeta[key].label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
