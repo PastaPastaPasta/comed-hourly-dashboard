@@ -187,6 +187,12 @@ button {
   background: #fff;
 }
 
+.toggle.active {
+  border-color: #172033;
+  background: #172033;
+  color: #fff;
+}
+
 .status {
   margin-left: auto;
   color: #52627a;

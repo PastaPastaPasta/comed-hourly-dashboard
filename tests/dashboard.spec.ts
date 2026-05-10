@@ -42,4 +42,13 @@ test('dashboard renders on desktop and mobile', async ({ page }) => {
   await expect(dayAheadLegend).toHaveAttribute('aria-pressed', 'true');
   await dayAheadLegend.click();
   await expect(dayAheadLegend).toHaveAttribute('aria-pressed', 'false');
+
+  const supplyOnly = page.getByRole('button', { name: 'Supply-only chart' });
+  await expect(supplyOnly).toHaveAttribute('aria-pressed', 'false');
+  await supplyOnly.click();
+  await expect(supplyOnly).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: 'Full variable' })).toHaveAttribute('aria-pressed', 'false');
+  await supplyOnly.click();
+  await expect(supplyOnly).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.getByRole('button', { name: 'Full variable' })).toHaveAttribute('aria-pressed', 'true');
 });

@@ -309,21 +309,25 @@ function App() {
             </button>
           ))}
         </div>
-        <label className="toggle">
-          <input
-            type="checkbox"
-            checked={showSupplyOnly}
-            onChange={(event) => {
-              setVisibleSeries({
-                actualSupply: true,
-                dayAheadSupply: true,
-                fullActual: !event.target.checked,
-                fullDayAhead: !event.target.checked,
-              });
-            }}
-          />
+        <button
+          className={showSupplyOnly ? 'toggle active' : 'toggle'}
+          type="button"
+          aria-pressed={showSupplyOnly}
+          onClick={() => {
+            setVisibleSeries(
+              showSupplyOnly
+                ? defaultVisibleSeries
+                : {
+                    actualSupply: true,
+                    dayAheadSupply: true,
+                    fullActual: false,
+                    fullDayAhead: false,
+                  },
+            );
+          }}
+        >
           Supply-only chart
-        </label>
+        </button>
         <span className={`status ${status}`}>
           {status === 'loading' ? 'Loading live data' : status === 'error' ? 'Data issue' : `Updated ${updatedAt ? formatCentralDateTime(updatedAt) : 'n/a'}`}
         </span>
