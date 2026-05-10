@@ -34,6 +34,7 @@ test('dashboard renders on desktop and mobile', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Full variable electricity price' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Hour-ending price curve' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Best charging windows' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Hour-ending table' })).toBeVisible();
   await expect(page.locator('.recharts-wrapper').first()).toBeVisible();
 });

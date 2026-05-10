@@ -21,6 +21,7 @@ describe('App', () => {
     expect(await screen.findByText('Full variable electricity price')).toBeInTheDocument();
     expect(screen.getByLabelText('Dashboard controls')).toBeInTheDocument();
     expect(screen.getByText('Tariff model')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Best charging windows' })).toBeInTheDocument();
     expect(await screen.findByText('Hour-ending table')).toBeInTheDocument();
   });
 });

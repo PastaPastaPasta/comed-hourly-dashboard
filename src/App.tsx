@@ -6,6 +6,7 @@ import {
   Legend,
   Line,
   LineChart,
+  ReferenceArea,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -68,6 +69,64 @@ const cents = (value: number | null | undefined, digits = 2) =>
     : 'n/a';
 
 const dollars = (value: number) => value.toFixed(5);
+const HOUR_MS = 60 * 60 * 1000;
+
+type ChargingWindow = {
+  durationHours: number;
+  startAt: number;
+  endAt: number;
+  averageCents: number;
+  minCents: number;
+  maxCents: number;
+};
+
+const expectedFullPrice = (point: DashboardPoint) => point.fullActual ?? point.fullDayAhead;
+
+function findBestChargingWindow(
+  points: DashboardPoint[],
+  referenceTime: number,
+  durationHours: number,
+): ChargingWindow | null {
+  const future = points
+    .filter((point) => point.at - HOUR_MS >= referenceTime && expectedFullPrice(point) !== null)
+    .sort((a, b) => a.at - b.at);
+
+  let best: ChargingWindow | null = null;
+
+  for (let index = 0; index <= future.length - durationHours; index += 1) {
+    const windowPoints = future.slice(index, index + durationHours);
+    const isContiguous = windowPoints.every((point, pointIndex) => {
+      if (pointIndex === 0) return true;
+      return point.at - windowPoints[pointIndex - 1].at === HOUR_MS;
+    });
+    if (!isContiguous) continue;
+
+    const prices = windowPoints.map((point) => expectedFullPrice(point)).filter((value): value is number => value !== null);
+    if (prices.length !== durationHours) continue;
+
+    const averageCents = average(prices);
+    if (averageCents === null) continue;
+
+    const candidate = {
+      durationHours,
+      startAt: windowPoints[0].at - HOUR_MS,
+      endAt: windowPoints[windowPoints.length - 1].at,
+      averageCents,
+      minCents: Math.min(...prices),
+      maxCents: Math.max(...prices),
+    };
+
+    if (!best || candidate.averageCents < best.averageCents) {
+      best = candidate;
+    }
+  }
+
+  return best;
+}
+
+function formatWindow(window: ChargingWindow): string {
+  return `${formatCentralDateTime(window.startAt)}-${formatCentralDateTime(window.endAt)}`;
+}
 
 function App() {
   const [range, setRange] = useState<RangeKey>('today');
@@ -90,6 +149,14 @@ function App() {
   }, [overrides]);
 
   useEffect(() => {
+    const interval = window.setInterval(() => {
+      setRefreshKey((value) => value + 1);
+    }, 5 * 60 * 1000);
+
+    return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
     const controller = new AbortController();
     const dates = dateRangeForKey(range);
     setStatus('loading');
@@ -103,7 +170,12 @@ function App() {
       .then(([prices, hourAverage, fiveMinute]) => {
         const merged = mergePricePoints(prices.actual, prices.dayAhead, overrides);
         setPoints(merged);
-        setSelectedPoint((previous) => previous ?? merged.find((point) => point.actualSupply !== null) ?? merged[0] ?? null);
+        setSelectedPoint((previous) =>
+          merged.find((point) => point.at === previous?.at) ??
+          merged.find((point) => point.actualSupply !== null || point.dayAheadSupply !== null) ??
+          merged[0] ??
+          null,
+        );
         setCurrentHourAverage(hourAverage);
         setFiveMinuteCount(fiveMinute.length);
         setUpdatedAt(Date.now());
@@ -139,6 +211,11 @@ function App() {
     const bestValue = best ? (best.fullActual ?? best.fullDayAhead) : null;
     return bestValue === null || (value !== null && value > bestValue) ? point : best;
   }, null);
+  const chargingWindows = [1, 2, 3]
+    .map((hours) => findBestChargingWindow(points, referenceTime, hours))
+    .filter((window): window is ChargingWindow => window !== null);
+  const highlightedWindow =
+    chargingWindows.find((window) => window.durationHours === 3) ?? chargingWindows.at(-1) ?? null;
 
   const updateClass = (id: ResidentialClassId) => {
     const defaults = createDefaultOverrides(id);
@@ -230,6 +307,34 @@ function App() {
               CSV
             </button>
           </div>
+          <section className="charging-recommendations" aria-label="Best charging windows">
+            <div>
+              <h3>Best charging windows</h3>
+              <p>Expected full price uses real-time prices when available, otherwise day-ahead prices.</p>
+            </div>
+            <div className="charging-window-grid">
+              {chargingWindows.length ? (
+                chargingWindows.map((window) => (
+                  <button
+                    key={window.durationHours}
+                    className={window.durationHours === highlightedWindow?.durationHours ? 'charging-window active' : 'charging-window'}
+                    type="button"
+                    onClick={() => {
+                      const point = points.find((candidate) => candidate.at === window.endAt);
+                      if (point) setSelectedPoint(point);
+                    }}
+                  >
+                    <span>{window.durationHours}h</span>
+                    <strong>{cents(window.averageCents)} avg</strong>
+                    <small>{formatWindow(window)}</small>
+                    <small>{cents(window.minCents)}-{cents(window.maxCents)} range</small>
+                  </button>
+                ))
+              ) : (
+                <div className="charging-empty">No future expected hours in this view.</div>
+              )}
+            </div>
+          </section>
           <div className="chart-frame">
             {points.length ? (
               <ResponsiveContainer width="100%" height="100%" minWidth={280}>
@@ -250,6 +355,16 @@ function App() {
                   <YAxis unit="¢" width={48} />
                   <Tooltip content={<ChartTooltip />} />
                   <Legend />
+                  {highlightedWindow ? (
+                    <ReferenceArea
+                      x1={highlightedWindow.startAt}
+                      x2={highlightedWindow.endAt}
+                      fill="#dbeafe"
+                      fillOpacity={0.5}
+                      stroke="#2563eb"
+                      strokeOpacity={0.5}
+                    />
+                  ) : null}
                   <ReferenceLine y={0} stroke="#768298" strokeDasharray="4 4" />
                   <Line type="monotone" dataKey="actualSupply" name="Real-time supply" stroke="#1f6feb" strokeWidth={2} dot={false} connectNulls />
                   <Line type="monotone" dataKey="dayAheadSupply" name="Day-ahead supply" stroke="#f59e0b" strokeWidth={2} strokeDasharray="6 4" dot={false} connectNulls />
