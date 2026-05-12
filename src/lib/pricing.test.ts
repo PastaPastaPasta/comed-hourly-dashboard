@@ -50,6 +50,7 @@ describe('pricing', () => {
     );
 
     expect(points[0].bucketLabel).toBe('Morning');
+    expect(points[0].label).toBe('12:00 PM');
     expect(points[0].dfc).toBeCloseTo(4.428);
     expect(points[0].fullActual).toBeCloseTo(2 + 4.428 + 1.083 + 0.126 - 5.1909);
   });

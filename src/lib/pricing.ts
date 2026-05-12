@@ -110,8 +110,8 @@ export function mergePricePoints(
       return {
         ...breakdown,
         at,
-        label: formatCentralHour(at),
-        dateLabel: formatCentralDate(at),
+        label: formatCentralHour(serviceHour.getTime()),
+        dateLabel: formatCentralDate(serviceHour.getTime()),
         actualSupply,
         dayAheadSupply,
         fullActual: actualFull,

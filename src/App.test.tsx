@@ -22,6 +22,6 @@ describe('App', () => {
     expect(screen.getByLabelText('Dashboard controls')).toBeInTheDocument();
     expect(screen.getByText('Tariff model')).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: 'Best charging windows' })).toBeInTheDocument();
-    expect(await screen.findByText('Hour-ending table')).toBeInTheDocument();
+    expect(await screen.findByText('Hour-beginning table')).toBeInTheDocument();
   });
 });

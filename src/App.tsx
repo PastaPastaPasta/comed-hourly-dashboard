@@ -27,7 +27,7 @@ import {
 import './App.css';
 import { RESIDENTIAL_TARIFFS, SOURCE_LINKS, createDefaultOverrides, getTariff } from './data/tariffs';
 import { fetchCurrentHourAverage, fetchFiveMinuteFeed, fetchRangePrices } from './lib/comed';
-import { average, calculateFullPrice, mergePricePoints } from './lib/pricing';
+import { average, calculateFullPrice, mergePricePoints, serviceHourForHourEnding } from './lib/pricing';
 import { dateRangeForKey, formatCentralDateTime } from './lib/time';
 import { loadOverrides, saveOverrides } from './lib/storage';
 import type {
@@ -145,6 +145,10 @@ function formatWindow(window: ChargingWindow): string {
   return `${formatCentralDateTime(window.startAt)}-${formatCentralDateTime(window.endAt)}`;
 }
 
+function formatServiceDateTime(hourEndingMs: number): string {
+  return formatCentralDateTime(serviceHourForHourEnding(hourEndingMs).getTime());
+}
+
 function App() {
   const [range, setRange] = useState<RangeKey>('today');
   const [visibleSeries, setVisibleSeries] = useState(defaultVisibleSeries);
@@ -216,7 +220,7 @@ function App() {
   const fullAverage = average(points.map((point) => point.fullActual ?? point.fullDayAhead));
   const referenceTime = updatedAt ?? 0;
   const upcoming = points.filter(
-    (point) => point.at >= referenceTime && (point.fullActual ?? point.fullDayAhead) !== null,
+    (point) => point.at - HOUR_MS >= referenceTime && (point.fullActual ?? point.fullDayAhead) !== null,
   );
   const cheapest = upcoming.reduce<DashboardPoint | null>((best, point) => {
     const value = point.fullActual ?? point.fullDayAhead;
@@ -292,8 +296,8 @@ function App() {
         <Kpi icon={<Zap size={18} />} label="Current supply" value={cents(currentHourAverage)} />
         <Kpi icon={<CircleDollarSign size={18} />} label="Current full variable" value={cents(nowBreakdown?.total)} />
         <Kpi icon={<Activity size={18} />} label="Range average" value={cents(fullAverage)} />
-        <Kpi icon={<CalendarDays size={18} />} label="Cheapest upcoming" value={cheapest ? `${cents(cheapest.fullActual ?? cheapest.fullDayAhead)} ${formatCentralDateTime(cheapest.at)}` : 'n/a'} />
-        <Kpi icon={<BarChart3 size={18} />} label="Highest upcoming" value={highest ? `${cents(highest.fullActual ?? highest.fullDayAhead)} ${formatCentralDateTime(highest.at)}` : 'n/a'} />
+        <Kpi icon={<CalendarDays size={18} />} label="Cheapest upcoming" value={cheapest ? `${cents(cheapest.fullActual ?? cheapest.fullDayAhead)} ${formatServiceDateTime(cheapest.at)}` : 'n/a'} />
+        <Kpi icon={<BarChart3 size={18} />} label="Highest upcoming" value={highest ? `${cents(highest.fullActual ?? highest.fullDayAhead)} ${formatServiceDateTime(highest.at)}` : 'n/a'} />
       </section>
 
       <section className="toolbar" aria-label="Dashboard controls">
@@ -339,8 +343,8 @@ function App() {
         <section className="chart-panel" aria-label="Hourly price chart">
           <div className="section-heading">
             <div>
-              <h2>Hour-ending price curve</h2>
-              <p>All labels are Central hour-ending times; delivery buckets apply to the preceding service hour. Full price excludes fixed monthly charges and capacity charge.</p>
+              <h2>Hour-beginning price curve</h2>
+              <p>Displayed times are Central hour-beginning service times. ComEd supply data is converted from hour-ending labels. Full price excludes fixed monthly charges and capacity charge.</p>
             </div>
             <button className="secondary-button" type="button" onClick={() => exportCsv(points)}>
               <Download size={16} />
@@ -391,7 +395,7 @@ function App() {
                   }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#d7dde8" />
-                  <XAxis dataKey="at" tickFormatter={(value) => formatCentralDateTime(Number(value))} minTickGap={42} />
+                  <XAxis dataKey="at" tickFormatter={(value) => formatServiceDateTime(Number(value))} minTickGap={42} />
                   <YAxis unit="¢" width={48} />
                   <Tooltip content={<ChartTooltip />} />
                   <Legend
@@ -507,11 +511,11 @@ function App() {
 
       <section className="breakdown-grid">
         <section className="breakdown">
-          <h2>Selected hour ending</h2>
+          <h2>Selected hour beginning</h2>
           {activePoint ? (
             <>
               <div className="big-number">{cents(activePoint.total)}</div>
-              <p>{formatCentralDateTime(activePoint.at)} · {activePoint.bucketLabel}</p>
+              <p>{formatServiceDateTime(activePoint.at)} · {activePoint.bucketLabel}</p>
               <dl>
                 <BreakdownLine label="Supply" value={activePoint.supply} />
                 <BreakdownLine label="DFC" value={activePoint.dfc} />
@@ -526,12 +530,12 @@ function App() {
         </section>
 
         <section className="table-panel">
-          <h2>Hour-ending table</h2>
+          <h2>Hour-beginning table</h2>
           <div className="table-scroll">
             <table>
               <thead>
                 <tr>
-                  <th>Hour ending</th>
+                  <th>Hour beginning</th>
                   <th>Delivery bucket</th>
                   <th>Actual</th>
                   <th>Day-ahead</th>
@@ -543,7 +547,7 @@ function App() {
               <tbody>
                 {points.map((point) => (
                   <tr key={point.at} onClick={() => setSelectedPoint(point)}>
-                    <td>{formatCentralDateTime(point.at)}</td>
+                    <td>{formatServiceDateTime(point.at)}</td>
                     <td>{point.bucketLabel}</td>
                     <td>{cents(point.actualSupply)}</td>
                     <td>{cents(point.dayAheadSupply)}</td>
@@ -661,7 +665,7 @@ function ChartTooltip({
   const point = payload[0].payload;
   return (
     <div className="chart-tooltip">
-      <strong>{formatCentralDateTime(point.at)}</strong>
+      <strong>{formatServiceDateTime(point.at)}</strong>
       {!compact ? <span>{point.bucketLabel}</span> : null}
       {payload
         .filter((item) => Number.isFinite(item.value))
@@ -677,9 +681,9 @@ function ChartTooltip({
 
 function exportCsv(points: DashboardPoint[]) {
   const rows = [
-    ['hour_ending_central', 'bucket', 'actual_supply_cents', 'day_ahead_supply_cents', 'dfc_cents', 'transmission_cents', 'iedt_cents', 'riders_taxes_cents', 'full_actual_cents', 'full_day_ahead_cents'],
+    ['hour_beginning_central', 'delivery_bucket', 'actual_supply_cents', 'day_ahead_supply_cents', 'dfc_cents', 'transmission_cents', 'iedt_cents', 'riders_taxes_cents', 'full_actual_cents', 'full_day_ahead_cents'],
     ...points.map((point) => [
-      formatCentralDateTime(point.at),
+      formatServiceDateTime(point.at),
       point.bucketLabel,
       point.actualSupply ?? '',
       point.dayAheadSupply ?? '',
