@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createDefaultOverrides } from '../data/tariffs';
-import { calculateFullPrice, findDfcBucket } from './pricing';
+import { calculateFullPrice, findDfcBucket, mergePricePoints, serviceHourForHourEnding } from './pricing';
 import { centralWallTimeToUtcMs } from './time';
 
 const overrides = createDefaultOverrides('single-no-heat');
@@ -33,6 +33,25 @@ describe('pricing', () => {
     expect(findDfcBucket(centralDate(13), buckets).key).toBe('middayPeak');
     expect(findDfcBucket(centralDate(19), buckets).key).toBe('evening');
     expect(findDfcBucket(centralDate(21), buckets).key).toBe('overnight');
+  });
+
+  it('uses the service hour before the hour-ending label for delivery buckets', () => {
+    expect(findDfcBucket(serviceHourForHourEnding(centralDate(6).getTime()), buckets).key).toBe('overnight');
+    expect(findDfcBucket(serviceHourForHourEnding(centralDate(13).getTime()), buckets).key).toBe('morning');
+    expect(findDfcBucket(serviceHourForHourEnding(centralDate(19).getTime()), buckets).key).toBe('middayPeak');
+    expect(findDfcBucket(serviceHourForHourEnding(centralDate(21).getTime()), buckets).key).toBe('evening');
+  });
+
+  it('merges hour-ending supply prices with normal clock-time delivery charges', () => {
+    const points = mergePricePoints(
+      [{ at: centralDate(13).getTime(), supplyCents: 2, kind: 'actual' }],
+      [],
+      overrides,
+    );
+
+    expect(points[0].bucketLabel).toBe('Morning');
+    expect(points[0].dfc).toBeCloseTo(4.428);
+    expect(points[0].fullActual).toBeCloseTo(2 + 4.428 + 1.083 + 0.126 - 5.1909);
   });
 
   it('adds sample bill DFC values into the full variable price', () => {

@@ -340,7 +340,7 @@ function App() {
           <div className="section-heading">
             <div>
               <h2>Hour-ending price curve</h2>
-              <p>All labels are Central hour-ending times. Full price excludes fixed monthly charges and capacity charge.</p>
+              <p>All labels are Central hour-ending times; delivery buckets apply to the preceding service hour. Full price excludes fixed monthly charges and capacity charge.</p>
             </div>
             <button className="secondary-button" type="button" onClick={() => exportCsv(points)}>
               <Download size={16} />
@@ -532,7 +532,7 @@ function App() {
               <thead>
                 <tr>
                   <th>Hour ending</th>
-                  <th>Bucket</th>
+                  <th>Delivery bucket</th>
                   <th>Actual</th>
                   <th>Day-ahead</th>
                   <th>DFC</th>

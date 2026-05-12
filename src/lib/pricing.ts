@@ -11,6 +11,11 @@ import type {
 import { centralDateParts, formatCentralDate, formatCentralHour } from './time';
 
 const dollarsToCents = (value: number) => value * 100;
+const HOUR_MS = 60 * 60 * 1000;
+
+export function serviceHourForHourEnding(hourEndingMs: number): Date {
+  return new Date(hourEndingMs - HOUR_MS);
+}
 
 export function findDfcBucket(date: Date, buckets: DfcBucket[]): DfcBucket {
   const hour = centralDateParts(date).hour;
@@ -91,15 +96,16 @@ export function mergePricePoints(
   return Array.from(timestamps)
     .sort((a, b) => a - b)
     .map((at) => {
-      const date = new Date(at);
+      // ComEd hourly supply points are labeled by hour ending; delivery buckets use the service hour.
+      const serviceHour = serviceHourForHourEnding(at);
       const actualSupply = actualByTime.get(at) ?? null;
       const dayAheadSupply = dayAheadByTime.get(at) ?? null;
       const supplyForBreakdown = actualSupply ?? dayAheadSupply ?? 0;
-      const breakdown = calculateFullPrice(supplyForBreakdown, date, overrides);
+      const breakdown = calculateFullPrice(supplyForBreakdown, serviceHour, overrides);
       const actualFull =
-        actualSupply === null ? null : calculateFullPrice(actualSupply, date, overrides).total;
+        actualSupply === null ? null : calculateFullPrice(actualSupply, serviceHour, overrides).total;
       const dayAheadFull =
-        dayAheadSupply === null ? null : calculateFullPrice(dayAheadSupply, date, overrides).total;
+        dayAheadSupply === null ? null : calculateFullPrice(dayAheadSupply, serviceHour, overrides).total;
 
       return {
         ...breakdown,
