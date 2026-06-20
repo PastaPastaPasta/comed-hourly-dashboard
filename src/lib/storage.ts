@@ -1,7 +1,7 @@
 import { COMMON_ADDER_KEYS, createDefaultOverrides, getTariff } from '../data/tariffs';
 import type { CommonAdders, TariffOverrides } from '../types';
 
-const STORAGE_KEY = 'comed-hourly-dashboard:tariff-overrides:v2';
+const STORAGE_KEY = 'comed-hourly-dashboard:tariff-overrides:v3';
 
 function sanitizeCommonAdders(
   defaults: CommonAdders,

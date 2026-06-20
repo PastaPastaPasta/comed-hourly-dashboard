@@ -44,6 +44,7 @@ export type CommonAdders = {
   carbonFreeResourceAdjustment: number;
   zeroEmissionStandard: number;
   energyTransitionAssistance: number;
+  lowIncomeDiscountRecovery: number;
   franchiseCost: number;
   stateTax: number;
   municipalTax: number;

@@ -18,7 +18,7 @@ export const SOURCE_LINKS = [
     url: 'https://www.comed.com/cdn/assets/v3/assets/blt3ebb3fed6084be2a/blt3e0ca86b8d7fead8/679124838b9f8273f6633ade/ADA_Summary_of_Typical_Residential_Line_Item_Changes.pdf?branch=prod_alias',
   },
   {
-    label: 'User bill: Res - Hourly Single - TOD, Apr 7-May 6 2026',
+    label: 'User bill: Res - Hourly Single - TOD, May 6-Jun 7 2026',
     url: '#bill-defaults',
   },
 ];
@@ -64,11 +64,11 @@ export const RESIDENTIAL_TARIFFS: ResidentialTariff[] = [
     id: 'single-no-heat',
     label: 'Single family, no electric heat',
     description: 'Residential single-family delivery class without electric space heat.',
-    customerCharge: 15.26,
-    standardMeteringCharge: 3.81,
+    customerCharge: 15.5,
+    standardMeteringCharge: 3.87,
     standardDfc: 0.06228,
-    iedt: 0.00126,
-    timeOfDayDfc: buckets(0.04428, 0.11727, 0.04142, 0.03311),
+    iedt: 0.00128,
+    timeOfDayDfc: buckets(0.04475, 0.11852, 0.04185, 0.03345),
   },
   {
     id: 'multi-no-heat',
@@ -103,19 +103,20 @@ export const RESIDENTIAL_TARIFFS: ResidentialTariff[] = [
 ];
 
 export const DEFAULT_COMMON_ADDERS: CommonAdders = {
-  transmission: 0.01083,
-  miscProcurementComponents: 0.00062,
-  pea: 0,
+  transmission: 0.01074,
+  miscProcurementComponents: 0.00134,
+  pea: -0.00191104,
   energyEfficiency: 0.00369,
   environmentalCostRecovery: 0.00009,
-  renewablePortfolioStandard: 0.00502,
+  renewablePortfolioStandard: 0.00516,
   coalToSolarEnergyStorage: 0.00009,
-  carbonFreeResourceAdjustment: -0.06414,
-  zeroEmissionStandard: 0.00189,
+  carbonFreeResourceAdjustment: -0.01344,
+  zeroEmissionStandard: 0.00087,
   energyTransitionAssistance: 0.00084,
-  franchiseCost: 0,
-  stateTax: 0,
-  municipalTax: 0,
+  lowIncomeDiscountRecovery: 0.00111203,
+  franchiseCost: 0.00076606,
+  stateTax: 0.00330313,
+  municipalTax: 0.00627677,
   miscellaneous: 0,
 };
 

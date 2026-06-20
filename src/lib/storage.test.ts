@@ -20,8 +20,9 @@ describe('storage', () => {
   it('loads current bill defaults with negative carbon-free adjustment', () => {
     const overrides = loadOverrides();
 
-    expect(overrides.commonAdders.carbonFreeResourceAdjustment).toBe(-0.06414);
-    expect(overrides.commonAdders.pea).toBe(0);
+    expect(overrides.commonAdders.carbonFreeResourceAdjustment).toBe(-0.01344);
+    expect(overrides.commonAdders.pea).toBeCloseTo(-0.00191104);
+    expect(overrides.commonAdders.lowIncomeDiscountRecovery).toBeCloseTo(0.00111203);
   });
 
   it('does not persist obsolete common adder keys', () => {
@@ -34,7 +35,7 @@ describe('storage', () => {
       } as typeof overrides.commonAdders,
     });
 
-    const saved = store.get('comed-hourly-dashboard:tariff-overrides:v2');
+    const saved = store.get('comed-hourly-dashboard:tariff-overrides:v3');
 
     expect(saved).not.toContain('capacityCharge');
   });

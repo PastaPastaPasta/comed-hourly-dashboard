@@ -57,6 +57,7 @@ const adderLabels: Record<keyof CommonAdders, string> = {
   carbonFreeResourceAdjustment: 'Carbon-free resource',
   zeroEmissionStandard: 'Zero emission standard',
   energyTransitionAssistance: 'Energy transition',
+  lowIncomeDiscountRecovery: 'Low income discount recovery',
   franchiseCost: 'Franchise cost',
   stateTax: 'State tax',
   municipalTax: 'Municipal tax',

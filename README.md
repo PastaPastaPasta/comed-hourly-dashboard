@@ -21,6 +21,6 @@ The app reads CORS-enabled ComEd endpoints directly from the browser:
 - `https://hourlypricing.comed.com/api?type=5minutefeed`
 - `https://hourlypricing.comed.com/api?type=currenthouraverage`
 
-Tariff defaults are curated from ComEd residential delivery documents and a user-provided Res - Hourly Single - TOD bill for Apr 7-May 6 2026. Every per-kWh component is editable because ComEd rates and bill-specific adjustments can change.
+Tariff defaults are curated from ComEd residential delivery documents and a user-provided Res - Hourly Single - TOD bill for May 6-Jun 7 2026. Every per-kWh component is editable because ComEd rates and bill-specific adjustments can change.
 
-Fixed monthly customer, metering, and capacity charges are intentionally not included in the default hourly graph because they are not marginal hourly kWh costs. Purchased Electricity Adjustment defaults to 0 because it varies month to month and is assumed to average out over time.
+Fixed monthly customer, metering, and capacity charges are intentionally not included in the default hourly graph because they are not marginal hourly kWh costs. Purchased Electricity Adjustment and flat bill-specific tax/fee lines are converted to cents/kWh from the latest bill and remain editable.
