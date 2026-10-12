@@ -1,4 +1,13 @@
-import type { CommonAdders, DfcBucket, ResidentialTariff, TariffOverrides } from '../types';
+import type {
+  CommonAdders,
+  DfcBucket,
+  DfcBucketKey,
+  DfcMode,
+  ResidentialClassId,
+  ResidentialTariff,
+  TariffOverrides,
+} from '../types';
+import tariffData from './tariffs.json';
 
 export const SOURCE_LINKS = [
   {
@@ -23,106 +32,30 @@ export const SOURCE_LINKS = [
   },
 ];
 
-const buckets = (
-  morning: number,
-  middayPeak: number,
-  evening: number,
-  overnight: number,
-): DfcBucket[] => [
-  {
-    key: 'morning',
-    label: 'Morning',
-    startHour: 6,
-    endHour: 13,
-    dollarsPerKwh: morning,
-  },
-  {
-    key: 'middayPeak',
-    label: 'Mid-Day Peak',
-    startHour: 13,
-    endHour: 19,
-    dollarsPerKwh: middayPeak,
-  },
-  {
-    key: 'evening',
-    label: 'Evening',
-    startHour: 19,
-    endHour: 21,
-    dollarsPerKwh: evening,
-  },
-  {
-    key: 'overnight',
-    label: 'Overnight',
-    startHour: 21,
-    endHour: 6,
-    dollarsPerKwh: overnight,
-  },
-];
+// Every number lives in tariffs.json, which is also published next to the app as
+// tariffs.json for other tools (the solar compute gate). Edit values there, not here.
+const timeOfDayBuckets = (dfc: Record<DfcBucketKey, number>): DfcBucket[] =>
+  tariffData.timeOfDayBuckets.map((bucket) => ({
+    key: bucket.key as DfcBucketKey,
+    label: bucket.label,
+    startHour: bucket.startHour,
+    endHour: bucket.endHour,
+    dollarsPerKwh: dfc[bucket.key as DfcBucketKey],
+  }));
 
-export const RESIDENTIAL_TARIFFS: ResidentialTariff[] = [
-  {
-    id: 'single-no-heat',
-    label: 'Single family, no electric heat',
-    description: 'Residential single-family delivery class without electric space heat.',
-    customerCharge: 15.5,
-    standardMeteringCharge: 3.87,
-    standardDfc: 0.06228,
-    iedt: 0.00128,
-    timeOfDayDfc: buckets(0.04475, 0.11852, 0.04185, 0.03345),
-  },
-  {
-    id: 'multi-no-heat',
-    label: 'Multi family, no electric heat',
-    description: 'Residential multi-family delivery class without electric space heat.',
-    customerCharge: 11.51,
-    standardMeteringCharge: 3.82,
-    standardDfc: 0.04791,
-    iedt: 0.00126,
-    timeOfDayDfc: buckets(0.034, 0.095, 0.03164, 0.02359),
-  },
-  {
-    id: 'single-heat',
-    label: 'Single family, electric heat',
-    description: 'Residential single-family delivery class with electric space heat.',
-    customerCharge: 18.18,
-    standardMeteringCharge: 4.03,
-    standardDfc: 0.03165,
-    iedt: 0.00134,
-    timeOfDayDfc: buckets(0.0235, 0.0616, 0.02225, 0.01836),
-  },
-  {
-    id: 'multi-heat',
-    label: 'Multi family, electric heat',
-    description: 'Residential multi-family delivery class with electric space heat.',
-    customerCharge: 12.95,
-    standardMeteringCharge: 4.01,
-    standardDfc: 0.02996,
-    iedt: 0.00133,
-    timeOfDayDfc: buckets(0.02254, 0.05729, 0.02138, 0.01785),
-  },
-];
+export const RESIDENTIAL_TARIFFS: ResidentialTariff[] = tariffData.residentialTariffs.map(
+  (tariff) => ({
+    ...tariff,
+    id: tariff.id as ResidentialClassId,
+    timeOfDayDfc: timeOfDayBuckets(tariff.timeOfDayDfc),
+  }),
+);
 
-export const DEFAULT_COMMON_ADDERS: CommonAdders = {
-  transmission: 0.01074,
-  miscProcurementComponents: 0.00134,
-  pea: -0.00191104,
-  energyEfficiency: 0.00369,
-  environmentalCostRecovery: 0.00009,
-  renewablePortfolioStandard: 0.00516,
-  coalToSolarEnergyStorage: 0.00009,
-  carbonFreeResourceAdjustment: -0.01344,
-  zeroEmissionStandard: 0.00087,
-  energyTransitionAssistance: 0.00084,
-  lowIncomeDiscountRecovery: 0.00111203,
-  franchiseCost: 0.00076606,
-  stateTax: 0.00330313,
-  municipalTax: 0.00627677,
-  miscellaneous: 0,
-};
+export const DEFAULT_COMMON_ADDERS: CommonAdders = { ...tariffData.commonAdders };
 
 export const COMMON_ADDER_KEYS = Object.keys(DEFAULT_COMMON_ADDERS) as Array<keyof CommonAdders>;
 
-export const DEFAULT_TARIFF_ID = 'single-no-heat';
+export const DEFAULT_TARIFF_ID = tariffData.defaultTariffId as ResidentialClassId;
 
 export function getTariff(id = DEFAULT_TARIFF_ID): ResidentialTariff {
   return RESIDENTIAL_TARIFFS.find((tariff) => tariff.id === id) ?? RESIDENTIAL_TARIFFS[0];
@@ -132,7 +65,7 @@ export function createDefaultOverrides(id = DEFAULT_TARIFF_ID): TariffOverrides 
   const tariff = getTariff(id);
   return {
     residentialClassId: tariff.id,
-    dfcMode: 'timeOfDay',
+    dfcMode: tariffData.defaultDfcMode as DfcMode,
     standardDfc: tariff.standardDfc,
     timeOfDayDfc: tariff.timeOfDayDfc.reduce(
       (result, bucket) => ({ ...result, [bucket.key]: bucket.dollarsPerKwh }),

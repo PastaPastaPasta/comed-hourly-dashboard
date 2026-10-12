@@ -1,0 +1,72 @@
+{
+  "comment": "Single source of truth for ComEd per-kWh tariff defaults, in dollars per kWh. The dashboard imports this file and publishes it as tariffs.json on GitHub Pages; other tools (the solar compute gate) read the published copy. Update values here only.",
+  "schemaVersion": 1,
+  "updatedFrom": "Res - Hourly Single - TOD bill, May 6-Jun 7 2026",
+  "defaultTariffId": "single-no-heat",
+  "defaultDfcMode": "timeOfDay",
+  "timeOfDayBuckets": [
+    { "key": "morning", "label": "Morning", "startHour": 6, "endHour": 13 },
+    { "key": "middayPeak", "label": "Mid-Day Peak", "startHour": 13, "endHour": 19 },
+    { "key": "evening", "label": "Evening", "startHour": 19, "endHour": 21 },
+    { "key": "overnight", "label": "Overnight", "startHour": 21, "endHour": 6 }
+  ],
+  "residentialTariffs": [
+    {
+      "id": "single-no-heat",
+      "label": "Single family, no electric heat",
+      "description": "Residential single-family delivery class without electric space heat.",
+      "customerCharge": 15.5,
+      "standardMeteringCharge": 3.87,
+      "standardDfc": 0.06228,
+      "iedt": 0.00128,
+      "timeOfDayDfc": { "morning": 0.04475, "middayPeak": 0.11852, "evening": 0.04185, "overnight": 0.03345 }
+    },
+    {
+      "id": "multi-no-heat",
+      "label": "Multi family, no electric heat",
+      "description": "Residential multi-family delivery class without electric space heat.",
+      "customerCharge": 11.51,
+      "standardMeteringCharge": 3.82,
+      "standardDfc": 0.04791,
+      "iedt": 0.00126,
+      "timeOfDayDfc": { "morning": 0.034, "middayPeak": 0.095, "evening": 0.03164, "overnight": 0.02359 }
+    },
+    {
+      "id": "single-heat",
+      "label": "Single family, electric heat",
+      "description": "Residential single-family delivery class with electric space heat.",
+      "customerCharge": 18.18,
+      "standardMeteringCharge": 4.03,
+      "standardDfc": 0.03165,
+      "iedt": 0.00134,
+      "timeOfDayDfc": { "morning": 0.0235, "middayPeak": 0.0616, "evening": 0.02225, "overnight": 0.01836 }
+    },
+    {
+      "id": "multi-heat",
+      "label": "Multi family, electric heat",
+      "description": "Residential multi-family delivery class with electric space heat.",
+      "customerCharge": 12.95,
+      "standardMeteringCharge": 4.01,
+      "standardDfc": 0.02996,
+      "iedt": 0.00133,
+      "timeOfDayDfc": { "morning": 0.02254, "middayPeak": 0.05729, "evening": 0.02138, "overnight": 0.01785 }
+    }
+  ],
+  "commonAdders": {
+    "transmission": 0.01074,
+    "miscProcurementComponents": 0.00134,
+    "pea": -0.00191104,
+    "energyEfficiency": 0.00369,
+    "environmentalCostRecovery": 0.00009,
+    "renewablePortfolioStandard": 0.00516,
+    "coalToSolarEnergyStorage": 0.00009,
+    "carbonFreeResourceAdjustment": -0.01344,
+    "zeroEmissionStandard": 0.00087,
+    "energyTransitionAssistance": 0.00084,
+    "lowIncomeDiscountRecovery": 0.00111203,
+    "franchiseCost": 0.00076606,
+    "stateTax": 0.00330313,
+    "municipalTax": 0.00627677,
+    "miscellaneous": 0
+  }
+}
