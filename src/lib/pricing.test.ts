@@ -1,27 +1,25 @@
 import { describe, expect, it } from 'vitest';
-import { createDefaultOverrides } from '../data/tariffs';
-import { calculateFullPrice, findDfcBucket, mergePricePoints, serviceHourForHourEnding } from './pricing';
+import tariffData from '../data/tariffs.json';
+import { createDefaultOverrides, getTariff } from '../data/tariffs';
+import {
+  calculateFullPrice,
+  commonAddersTotal,
+  findDfcBucket,
+  mergePricePoints,
+  serviceHourForHourEnding,
+} from './pricing';
 import { centralWallTimeToUtcMs } from './time';
 
+// Expectations come from tariffs.json so a tariff update needs no test edits; these tests
+// check how prices are assembled, not what the current rates are.
 const overrides = createDefaultOverrides('single-no-heat');
-const buckets = [
-  { key: 'morning' as const, label: 'Morning', startHour: 6, endHour: 13, dollarsPerKwh: 0.04475 },
-  {
-    key: 'middayPeak' as const,
-    label: 'Mid-Day Peak',
-    startHour: 13,
-    endHour: 19,
-    dollarsPerKwh: 0.11852,
-  },
-  { key: 'evening' as const, label: 'Evening', startHour: 19, endHour: 21, dollarsPerKwh: 0.04185 },
-  {
-    key: 'overnight' as const,
-    label: 'Overnight',
-    startHour: 21,
-    endHour: 6,
-    dollarsPerKwh: 0.03345,
-  },
-];
+const tariff = getTariff('single-no-heat');
+const buckets = tariff.timeOfDayDfc;
+const dfcCents = (key: string) => 100 * buckets.find((bucket) => bucket.key === key)!.dollarsPerKwh;
+const transmissionCents = 100 * tariffData.commonAdders.transmission;
+const ridersCents =
+  100 * (commonAddersTotal(tariffData.commonAdders) - tariffData.commonAdders.transmission);
+const fixedCents = transmissionCents + 100 * tariff.iedt + ridersCents;
 
 const centralDate = (hour: number) =>
   new Date(centralWallTimeToUtcMs(2026, 4, 9, hour, 0, 0));
@@ -51,17 +49,17 @@ describe('pricing', () => {
 
     expect(points[0].bucketLabel).toBe('Morning');
     expect(points[0].label).toBe('12:00 PM');
-    expect(points[0].dfc).toBeCloseTo(4.475);
-    expect(points[0].fullActual).toBeCloseTo(2 + 4.475 + 1.074 + 0.128 + 0.818695);
+    expect(points[0].dfc).toBeCloseTo(dfcCents('morning'));
+    expect(points[0].fullActual).toBeCloseTo(2 + dfcCents('morning') + fixedCents);
   });
 
-  it('adds sample bill DFC values into the full variable price', () => {
+  it('adds the bill DFC values into the full variable price', () => {
     const result = calculateFullPrice(2, centralDate(14), overrides);
 
-    expect(result.dfc).toBeCloseTo(11.852);
-    expect(result.transmission).toBeCloseTo(1.074);
-    expect(result.ridersAndTaxes).toBeCloseTo(0.818695);
-    expect(result.total).toBeCloseTo(15.872695);
+    expect(result.dfc).toBeCloseTo(dfcCents('middayPeak'));
+    expect(result.transmission).toBeCloseTo(transmissionCents);
+    expect(result.ridersAndTaxes).toBeCloseTo(ridersCents);
+    expect(result.total).toBeCloseTo(2 + dfcCents('middayPeak') + fixedCents);
     expect(result.bucketLabel).toBe('Mid-Day Peak');
   });
 
@@ -76,8 +74,8 @@ describe('pricing', () => {
     const multi = createDefaultOverrides('multi-no-heat');
 
     expect(multi.residentialClassId).toBe('multi-no-heat');
-    expect(multi.timeOfDayDfc.middayPeak).toBeCloseTo(0.095);
-    expect(multi.commonAdders.transmission).toBeCloseTo(overrides.commonAdders.transmission);
-    expect(multi.commonAdders.pea).toBeCloseTo(-0.00191104);
+    const multiData = tariffData.residentialTariffs.find((t) => t.id === 'multi-no-heat')!;
+    expect(multi.timeOfDayDfc).toEqual(multiData.timeOfDayDfc);
+    expect(multi.commonAdders).toEqual(tariffData.commonAdders);
   });
 });

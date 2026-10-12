@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import tariffData from '../data/tariffs.json';
 import { loadOverrides, saveOverrides } from './storage';
 
 describe('storage', () => {
@@ -17,12 +18,8 @@ describe('storage', () => {
     });
   });
 
-  it('loads current bill defaults with negative carbon-free adjustment', () => {
-    const overrides = loadOverrides();
-
-    expect(overrides.commonAdders.carbonFreeResourceAdjustment).toBe(-0.01344);
-    expect(overrides.commonAdders.pea).toBeCloseTo(-0.00191104);
-    expect(overrides.commonAdders.lowIncomeDiscountRecovery).toBeCloseTo(0.00111203);
+  it('loads the current bill defaults from tariffs.json', () => {
+    expect(loadOverrides().commonAdders).toEqual(tariffData.commonAdders);
   });
 
   it('does not persist obsolete common adder keys', () => {
